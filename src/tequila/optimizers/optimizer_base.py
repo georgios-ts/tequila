@@ -5,7 +5,7 @@ import typing, numbers, copy
 
 from tequila.utils.exceptions import TequilaException
 from tequila.simulators.simulator_api import compile, pick_backend
-from tequila.objective import Objective
+from tequila.objective import VectorObjective
 from tequila.circuit.gradient import grad
 from dataclasses import dataclass, field
 from tequila.objective.objective import assign_variable, Variable, format_variable_dictionary, format_variable_list
@@ -328,7 +328,7 @@ class Optimizer:
         """
         self.history = OptimizerHistory()
 
-    def __call__(self, objective: Objective,
+    def __call__(self, objective: VectorObjective,
                  variables: typing.List[Variable],
                  initial_values: typing.Dict[Variable, numbers.Real] = None,
                  *args,
@@ -339,7 +339,7 @@ class Optimizer:
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             The objective to optimize.
         variables: list:
             which variables to optimize over.
@@ -360,7 +360,7 @@ class Optimizer:
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective being optimized.
         initial_values: dict:
             initial values for the variables of objective, as a dictionary.
@@ -402,20 +402,20 @@ class Optimizer:
                 passive_angles[k] = v
         return active_angles, passive_angles, variables
 
-    def compile_objective(self, objective: Objective, *args, **kwargs):
+    def compile_objective(self, objective: VectorObjective, *args, **kwargs):
         """
         convenience function to wrap over compile; for use by inheritors.
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             an objective to compile.
         args
         kwargs
 
         Returns
         -------
-        Objective:
-            a compiled Objective. Types vary.
+        VectorObjective:
+            a compiled VectorObjective. Types vary.
         """
 
         return compile(objective=objective,
@@ -425,7 +425,7 @@ class Optimizer:
                        noise=self.noise,
                        *args, **kwargs)
 
-    def compile_gradient(self, objective: Objective,
+    def compile_gradient(self, objective: VectorObjective,
                          variables: typing.List[Variable],
                          gradient=None,
                          *args, **kwargs) -> typing.Tuple[
@@ -435,7 +435,7 @@ class Optimizer:
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective whose gradient is to be calculated.
         variables: list:
             the variables to take gradients with resepct to.
@@ -455,7 +455,7 @@ class Optimizer:
             compiled_grad = {k: self.compile_objective(objective=dO[k], *args, **kwargs) for k in variables}
 
         elif isinstance(gradient, dict):
-            if all([isinstance(x, Objective) for x in gradient.values()]):
+            if all([isinstance(x, VectorObjective) for x in gradient.values()]):
                 dO = gradient
                 compiled_grad = {k: self.compile_objective(objective=dO[k], *args, **kwargs) for k in variables}
             else:
@@ -470,8 +470,8 @@ class Optimizer:
 
     def compile_hessian(self,
                         variables: typing.List[Variable],
-                        grad_obj: typing.Dict[Variable, Objective],
-                        comp_grad_obj: typing.Dict[Variable, Objective],
+                        grad_obj: typing.Dict[Variable, VectorObjective],
+                        comp_grad_obj: typing.Dict[Variable, VectorObjective],
                         hessian: dict = None,
                         *args,
                         **kwargs) -> tuple:
@@ -514,7 +514,7 @@ class Optimizer:
                     compiled_hessian[(l, k)] = compiled_hessian[(k, l)]
 
         elif isinstance(hessian, dict):
-            if all([isinstance(x, Objective) for x in hessian.values()]):
+            if all([isinstance(x, VectorObjective) for x in hessian.values()]):
                 ddO = hessian
                 compiled_hessian = {k: self.compile_objective(objective=ddO[k], *args, **kwargs) for k in
                                     hessian.keys()}
@@ -575,7 +575,7 @@ class _NumGrad:
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective whose gradient is to be approximated.
         variable:
             the variable the gradient of objective with respect to which is taken.
@@ -602,7 +602,7 @@ class _NumGrad:
         calculate objective gradient by symmetric shifts about a point.
         Parameters
         ----------
-        obj: Objective:
+        obj: VectorObjective:
             objective to call.
         vars:
             variables to feed to the objective.
@@ -631,7 +631,7 @@ class _NumGrad:
         calculate objective gradient by asymmetric upward shfit relative to some point.
         Parameters
         ----------
-        obj: Objective:
+        obj: VectorObjective:
             objective to call.
         vars:
             variables to feed to the objective.
@@ -660,7 +660,7 @@ class _NumGrad:
         calculate objective gradient by asymmetric downward shfit relative to some point.
         Parameters
         ----------
-        obj: Objective:
+        obj: VectorObjective:
             objective to call.
         vars:
             variables to feed to the objective.

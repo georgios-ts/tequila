@@ -80,7 +80,7 @@ def minimize(method: str,
     method: str:
        The optimization method (e.g. bfgs, cobyla, nelder-mead, ...)
        see 'tq.optimizers.show_available_methods()' for an overview
-    objective: tq.Objective:
+    objective: tq.VectorObjective:
        The abstract tequila objective to be optimized
     variables: list of names:
        The variables which shall be optimized given as list

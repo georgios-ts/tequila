@@ -1,5 +1,5 @@
 from tequila.circuit.compiler import Compiler
-from tequila.objective.objective import Objective, ExpectationValueImpl, Variable, assign_variable,identity
+from tequila.objective.objective import VectorObjective, ExpectationValueImpl, Variable, assign_variable,identity
 from tequila import TequilaException
 import numpy as np
 import copy
@@ -8,11 +8,11 @@ import copy
 from tequila.autograd_imports import numpy, jax, __AUTOGRAD__BACKEND__
 
 
-def grad(objective: Objective, variable: Variable = None, no_compile=False):
+def grad(objective: VectorObjective, variable: Variable = None, no_compile=False):
 
     '''
     wrapper function for getting the gradients of Objectives,ExpectationValues, Unitaries (including single gates), and Transforms.
-    :param obj (QCircuit,ParametrizedGateImpl,Objective,ExpectationValue,Transform,Variable): structure to be differentiated
+    :param obj (QCircuit,ParametrizedGateImpl,VectorObjective,ExpectationValue,Transform,Variable): structure to be differentiated
     :param variables (list of Variable): parameter with respect to which obj should be differentiated.
         default None: total gradient.
     return: dictionary of Objectives, if called on gate, circuit, exp.value, or objective; if Variable or Transform, returns number.
@@ -24,7 +24,7 @@ def grad(objective: Objective, variable: Variable = None, no_compile=False):
         result = {}
 
         if len(variables) == 0:
-            raise TequilaException("Error in gradient: Objective has no variables")
+            raise TequilaException("Error in gradient: VectorObjective has no variables")
 
         for k in variables:
             assert (k is not None)
@@ -46,19 +46,19 @@ def grad(objective: Objective, variable: Variable = None, no_compile=False):
         compiled = compiler(objective, variables=[variable])
 
     if variable not in compiled.extract_variables():
-        raise TequilaException("Error in taking gradient. Objective does not depend on variable {} ".format(variable))
+        raise TequilaException("Error in taking gradient. VectorObjective does not depend on variable {} ".format(variable))
 
     if isinstance(objective, ExpectationValueImpl):
         return __grad_expectationvalue(E=objective, variable=variable)
     elif objective.is_expectationvalue():
         return __grad_expectationvalue(E=compiled.args[-1], variable=variable)
-    elif isinstance(compiled, Objective):
+    elif isinstance(compiled, VectorObjective):
         return __grad_objective(objective=compiled, variable=variable)
     else:
-        raise TequilaException("Gradient not implemented for other types than ExpectationValue and Objective.")
+        raise TequilaException("Gradient not implemented for other types than ExpectationValue and VectorObjective.")
 
 
-def __grad_objective(objective: Objective, variable: Variable):
+def __grad_objective(objective: VectorObjective, variable: Variable):
     argsets = objective.argsets
     transformations = objective._transformations
     outputs=[]
@@ -80,7 +80,7 @@ def __grad_objective(objective: Objective, variable: Variable):
             if transformation is None or transformation == identity:
                 outer = 1.0
             else:
-                outer = Objective(argsets=[args], transformations=[df])
+                outer = VectorObjective(argsets=[args], transformations=[df])
 
             if hasattr(arg, "U"):
                 # save redundancies
@@ -103,7 +103,7 @@ def __grad_objective(objective: Objective, variable: Variable):
                 dO = dO + outer * inner
 
         if dO is None:
-            dO = Objective()
+            dO = VectorObjective()
         outputs.append(dO)
     if len(outputs) == 1:
         return outputs[0]
@@ -136,7 +136,7 @@ def __grad_expectationvalue(E: ExpectationValueImpl, variable: Variable):
     implements the analytic partial derivative of a unitary as it would appear in an expectation value. See the paper.
     :param unitary: the unitary whose gradient should be obtained
     :param variables (list, dict, str): the variables with respect to which differentiation should be performed.
-    :return: vector (as dict) of dU/dpi as Objective (without hamiltonian)
+    :return: vector (as dict) of dU/dpi as VectorObjective (without hamiltonian)
     '''
 
     hamiltonian = E.H
@@ -149,7 +149,7 @@ def __grad_expectationvalue(E: ExpectationValueImpl, variable: Variable):
 
     param_gates = unitary._parameter_map[variable]
 
-    dO = Objective()
+    dO = VectorObjective()
     for idx_g in param_gates:
         idx, g = idx_g
         # failsafe
@@ -175,7 +175,7 @@ def __grad_gaussian(unitary, g, i, variable, hamiltonian):
     :param variable: Variable or String: the variable with respect to which gate g is being differentiated
     :param hamiltonian: the hamiltonian with respect to which unitary is to be measured, in the case that unitary
         is contained within an ExpectationValue
-    :return: an Objective, whose calculation yields the gradient of g w.r.t variable
+    :return: an VectorObjective, whose calculation yields the gradient of g w.r.t variable
     '''
 
     if not hasattr(g, "shift"):
@@ -197,5 +197,5 @@ def __grad_gaussian(unitary, g, i, variable, hamiltonian):
 
     Oplus = ExpectationValueImpl(U=U1, H=hamiltonian)
     Ominus = ExpectationValueImpl(U=U2, H=hamiltonian)
-    dOinc = w1 * Objective(argsets=[[Oplus]]) + w2 * Objective(argsets=[[Ominus]])
+    dOinc = w1 * VectorObjective(argsets=[[Oplus]]) + w2 * VectorObjective(argsets=[[Ominus]])
     return dOinc

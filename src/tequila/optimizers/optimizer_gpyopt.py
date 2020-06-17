@@ -1,4 +1,4 @@
-from tequila.objective.objective import Objective
+from tequila.objective.objective import VectorObjective
 from tequila.optimizers.optimizer_base import Optimizer
 import typing
 import numbers
@@ -21,8 +21,8 @@ def array_to_objective_dict(objective, array, passives=None) -> typing.Dict[Vari
 
     Parameters
     ----------
-    objective: Objective:
-        an Objective, whose parameters the array is meant to represent
+    objective: VectorObjective:
+        an VectorObjective, whose parameters the array is meant to represent
     array: numpy.ndarray
         a numpy array of parameters.
     passives: optional:
@@ -58,7 +58,7 @@ class OptimizerGPyOpt(Optimizer):
     get_object:
         return a GPyOpt BayesianOptimization object from prepared information.
     construct_function:
-        return a tequila Objective as a callable function of a single numpy array.
+        return a tequila VectorObjective as a callable function of a single numpy array.
     redictify:
         transform an array of parameters into a dictionary.
     """
@@ -96,7 +96,7 @@ class OptimizerGPyOpt(Optimizer):
         super().__init__(backend=backend, maxiter=maxiter, samples=samples, save_history=save_history,device=device,
                          noise=noise, silent=silent)
 
-    def get_domain(self, objective: Objective, passive_angles: dict = None) -> typing.List[typing.Dict]:
+    def get_domain(self, objective: VectorObjective, passive_angles: dict = None) -> typing.List[typing.Dict]:
         """
         return a 'domain' object, for use by GPyOpt.
 
@@ -105,10 +105,10 @@ class OptimizerGPyOpt(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
-            the Objective to extract variables from to build the domain.
+        objective: VectorObjective:
+            the VectorObjective to extract variables from to build the domain.
         passive_angles: dict, optional:
-            a dictionary of which angles are passive, in Objective.
+            a dictionary of which angles are passive, in VectorObjective.
             Default: there are none; optimize all angles.
 
 
@@ -151,7 +151,7 @@ class OptimizerGPyOpt(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             an objective.
         passive_angles: dict, optional:
             the passive angles of objective.
@@ -172,7 +172,7 @@ class OptimizerGPyOpt(Optimizer):
         ----------
         arr:
             a numpy array.
-        objective: Objective:
+        objective: VectorObjective:
             an objective.
         passive_angles: dict, optional:
             supplements array with the passive angles of objective.
@@ -191,7 +191,7 @@ class OptimizerGPyOpt(Optimizer):
                 back[k] = v
         return back
 
-    def __call__(self, objective: Objective,
+    def __call__(self, objective: VectorObjective,
                  initial_values: typing.Dict[Variable, numbers.Real] = None,
                  variables: typing.List[typing.Hashable] = None,
                  method: str = 'lbfgs', *args, **kwargs) -> GPyOptReturnType:
@@ -201,7 +201,7 @@ class OptimizerGPyOpt(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective to optimize.
         initial_values: dict, optional:
             a starting point for optimization.
@@ -230,7 +230,7 @@ class OptimizerGPyOpt(Optimizer):
         if not self.silent:
             print(self)
             print("{:15} : {}".format("method", method))
-            print("{:15} : {} expectationvalues".format("Objective", O.count_expectationvalues()))
+            print("{:15} : {} expectationvalues".format("VectorObjective", O.count_expectationvalues()))
 
         f = self.construct_function(O, passive_angles)
         opt = self.get_object(f, dom, method)
@@ -242,7 +242,7 @@ class OptimizerGPyOpt(Optimizer):
                                 history=self.history, object=opt)
 
 
-def minimize(objective: Objective,
+def minimize(objective: VectorObjective,
              maxiter: int,
              variables: typing.List = None,
              initial_values: typing.Dict = None,
@@ -260,7 +260,7 @@ def minimize(objective: Objective,
     Minimize an objective using GPyOpt.
     Parameters
     ----------
-    objective: Objective :
+    objective: VectorObjective :
         The tequila objective to optimize
     initial_values: typing.Dict[typing.Hashable, numbers.Real], optional:
         Initial values as dictionary of Hashable types (variable keys) and floating point numbers.
@@ -274,7 +274,7 @@ def minimize(objective: Objective,
     backend: str, optional:
          Simulator backend, will be automatically chosen if set to None
     noise: NoiseModel, optional:
-        a noise model to apply to the circuits of Objective.
+        a noise model to apply to the circuits of VectorObjective.
     device: optional:
         the device from which to (potentially, simulatedly) sample all quantum circuits employed in optimization.
     method: str: Default = 'lbfgs':

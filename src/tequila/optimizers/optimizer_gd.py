@@ -1,5 +1,5 @@
 import numpy, typing, numbers
-from tequila.objective import Objective
+from tequila.objective import VectorObjective
 from tequila.objective.objective import Variable, format_variable_dictionary
 from .optimizer_base import Optimizer
 from collections import namedtuple
@@ -159,7 +159,7 @@ class OptimizerGD(Optimizer):
         if self.tol is not None:
             self.tol = abs(float(tol))
 
-    def __call__(self, objective: Objective,
+    def __call__(self, objective: VectorObjective,
                  maxiter: int = None,
                  initial_values: typing.Dict[Variable, numbers.Real] = None,
                  variables: typing.List[Variable] = None,
@@ -173,7 +173,7 @@ class OptimizerGD(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective to optimize.
         maxiter: int, optional:
             Overrides the optimizer to specify maximum number of iterations to perform.
@@ -251,7 +251,7 @@ class OptimizerGD(Optimizer):
         return GDReturnType(energy=E_final, angles=format_variable_dictionary(angles_final), history=self.history,
                             moments=self.moments_trajectory[id(comp)])
 
-    def prepare(self, objective: Objective, initial_values: dict = None,
+    def prepare(self, objective: VectorObjective, initial_values: dict = None,
                 variables: list = None, gradient=None):
         """
         perform all initialization for an objective, register it with lookup tables, and return it compiled.
@@ -259,7 +259,7 @@ class OptimizerGD(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective to ready for optimization.
         initial_values: dict, optional:
             the initial values of to prepare the optimizer with.
@@ -273,7 +273,7 @@ class OptimizerGD(Optimizer):
 
         Returns
         -------
-        Objective:
+        VectorObjective:
             compiled version of objective.
         """
         objective=objective.contract()
@@ -318,7 +318,7 @@ class OptimizerGD(Optimizer):
         ostring = id(comp)
         if not self.silent:
             print(self)
-            print("{:15} : {} expectationvalues".format("Objective", objective.count_expectationvalues()))
+            print("{:15} : {} expectationvalues".format("VectorObjective", objective.count_expectationvalues()))
             if compile_gradient:
                 counts = [x.count_expectationvalues() for x in comp_grad_obj.values()]
                 print("{:15} : {} expectationvalues".format("Gradient", sum(counts)))
@@ -335,13 +335,13 @@ class OptimizerGD(Optimizer):
         self.step_lookup[ostring] = 0
         return comp
 
-    def step(self, objective: Objective, parameters: typing.Dict[Variable, numbers.Real]) -> \
+    def step(self, objective: VectorObjective, parameters: typing.Dict[Variable, numbers.Real]) -> \
             typing.Dict[Variable, numbers.Real]:
         """
         perform a single optimization step and return suggested parameters.
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the compiled objective, to perform an optimization step for. MUST be one returned by prepare.
         parameters: dict:
             the parameters to use in performing the optimization step.
@@ -404,12 +404,12 @@ class OptimizerGD(Optimizer):
             self.moments_trajectory[k] = [(first, second)]
             self.step_lookup[k] = 0
 
-    def reset_momenta_for(self, objective: Objective):
+    def reset_momenta_for(self, objective: VectorObjective):
         """
         reset moment information about a specific objective.
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective whose information should be reset.
 
         Returns
@@ -591,7 +591,7 @@ class OptimizerGD(Optimizer):
         return new, back_moments, grads
 
 
-def minimize(objective: Objective,
+def minimize(objective: VectorObjective,
              lr=0.1,
              method='sgd',
              initial_values: typing.Dict[typing.Hashable, numbers.Real] = None,
@@ -614,7 +614,7 @@ def minimize(objective: Objective,
     """ Initialize and call the GD optimizer.
     Parameters
     ----------
-    objective: Objective :
+    objective: VectorObjective :
         The tequila objective to optimize
     lr: float >0:
         the learning rate. Default 0.1.
@@ -666,7 +666,7 @@ def minimize(objective: Objective,
 
     """
     if isinstance(gradient, dict) or hasattr(gradient, "items"):
-        if all([isinstance(x, Objective) for x in gradient.values()]):
+        if all([isinstance(x, VectorObjective) for x in gradient.values()]):
             gradient = format_variable_dictionary(gradient)
     optimizer = OptimizerGD(save_history=save_history,
                             method=method,

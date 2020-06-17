@@ -1,7 +1,7 @@
 import pytest
 from tequila import numpy as np
 from tequila.circuit.gradient import grad
-from tequila.objective.objective import Objective, Variable
+from tequila.objective.objective import VectorObjective, Variable
 import operator
 
 
@@ -36,7 +36,7 @@ def test_equality():
 def test_transform_update():
     a = Variable('a')
     b = Variable('a.')
-    t = Objective(transformations=[operator.add], argsets=[[a, b]])
+    t = VectorObjective(transformations=[operator.add], argsets=[[a, b]])
     variables = {a: 8, b: 1, a: 9, "c": 17}
     assert np.isclose(float(t(variables)), 10.0)
 
@@ -52,10 +52,10 @@ def test_exotic_gradients(gradvar):
     f = Variable('f')
     variables = {a: 2.0, b: 3.0, c: 4.0, d: 5.0, e: 6.0, f: 7.0}
 
-    t = c * a ** b + b / c - Objective(argsets=[[c]], transformations=[np.cos]) + f / (d * e) + a * Objective(argsets=[[d]],
-                                                                                                      transformations=[np.exp]) / (
-                    f + b) + Objective(argsets=[[e]], transformations=[np.tanh]) + Objective(argsets=[[f]],
-                                                                                             transformations=[np.sinc])
+    t = c * a ** b + b / c - VectorObjective(argsets=[[c]], transformations=[np.cos]) + f / (d * e) + a * VectorObjective(argsets=[[d]],
+                                                                                                                          transformations=[np.exp]) / (
+                    f + b) + VectorObjective(argsets=[[e]], transformations=[np.tanh]) + VectorObjective(argsets=[[f]],
+                                                                                                         transformations=[np.sinc])
     g = grad(t, gradvar)
     if gradvar == 'a':
         assert np.isclose(g(variables) , c(variables) * b(variables) * (a(variables) ** (b(variables) - 1.)) + np.exp(d(variables)) / (f(variables) + b(variables)))

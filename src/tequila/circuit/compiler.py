@@ -5,7 +5,7 @@ from tequila.circuit._gates_impl import RotationGateImpl, PhaseGateImpl, QGateIm
     ExponentialPauliGateImpl, TrotterizedGateImpl, PowerGateImpl
 from tequila.utils import to_float
 from tequila import Variable
-from tequila import Objective
+from tequila import VectorObjective
 from tequila.objective.objective import ExpectationValueImpl
 from tequila.autograd_imports import numpy as jnp
 from tequila.autograd_imports import numpy
@@ -110,7 +110,7 @@ class Compiler:
         self.swap = swap
         self.cc_max = cc_max
 
-    def __call__(self, objective: typing.Union[Objective, QCircuit, ExpectationValueImpl], variables=None, *args,
+    def __call__(self, objective: typing.Union[VectorObjective, QCircuit, ExpectationValueImpl], variables=None, *args,
                  **kwargs):
 
         """
@@ -129,7 +129,7 @@ class Compiler:
         a compiled version of objective
         """
         start = time.time()
-        if isinstance(objective, Objective) or hasattr(objective, "args"):
+        if isinstance(objective, VectorObjective) or hasattr(objective, "args"):
             result = self.compile_objective(objective=objective, variables=variables, *args, **kwargs)
         elif isinstance(objective, QCircuit) or hasattr(objective, "gates"):
             result = self.compile_circuit(abstract_circuit=objective, variables=variables, *args, **kwargs)
@@ -147,7 +147,7 @@ class Compiler:
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective.
         variables:
             Todo: jakob, what is this for?

@@ -1,7 +1,7 @@
 from tequila.utils import BitString, BitNumbering, BitStringLSB, initialize_bitstring, TequilaException, TequilaWarning
 from tequila.circuit import gates, QCircuit, NoiseModel
 from tequila.hamiltonian import paulis, QubitHamiltonian, PauliString
-from tequila.objective import Objective, ExpectationValue, Variable, assign_variable, format_variable_dictionary,\
+from tequila.objective import VectorObjective, ExpectationValue, Variable, assign_variable, format_variable_dictionary,\
     stack_objectives
 
 from tequila.optimizers import INSTALLED_OPTIMIZERS, show_available_optimizers

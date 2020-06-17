@@ -1,6 +1,6 @@
 from tequila import TequilaException
 from tequila.hamiltonian import paulis
-from tequila.objective.objective import Objective, ExpectationValueImpl, ExpectationValue
+from tequila.objective.objective import VectorObjective, ExpectationValueImpl, ExpectationValue
 from tequila.circuit.circuit import QCircuit
 from tequila.simulators.simulator_api import compile_objective
 from tequila.circuit.gradient import __grad_inner
@@ -170,7 +170,7 @@ def get_generator(gate) -> paulis.QubitHamiltonian:
 
 def stokes_block(expectation, initial_values=None, samples=None, device=None,
                  backend=None,
-                 noise=None) -> typing.List[typing.List[typing.List[typing.Union[float,Objective]]]]:
+                 noise=None) -> typing.List[typing.List[typing.List[typing.Union[float, VectorObjective]]]]:
 
     """
     returns the blocks of the layerwise block-diagonal approximation to the qgt.
@@ -245,7 +245,7 @@ def stokes_block(expectation, initial_values=None, samples=None, device=None,
     return blocks
 
 
-def qng_circuit_grad(E: ExpectationValueImpl) -> typing.List[Objective]:
+def qng_circuit_grad(E: ExpectationValueImpl) -> typing.List[VectorObjective]:
     """
     tool for constructing the gradient of an expectationvalue,
     but without digging deeper into the underlying parameters; Unlike it's cousin in the usual gradient,
@@ -283,7 +283,7 @@ def qng_circuit_grad(E: ExpectationValueImpl) -> typing.List[Objective]:
     return out
 
 
-def qng_grad_gaussian(unitary, g, i, hamiltonian) -> Objective:
+def qng_grad_gaussian(unitary, g, i, hamiltonian) -> VectorObjective:
     """
     get the gradient of an expectationvalue of a unitary and a hamiltonian with respect to gaussian gate g.
     THIS variant of the function does not seek out underlying gate parameters; it treats each variable 'as is'.
@@ -302,7 +302,7 @@ def qng_grad_gaussian(unitary, g, i, hamiltonian) -> Objective:
         is contained within an ExpectationValue
     Returns
     -------
-    Objective:
+    VectorObjective:
         the analytical gradient of  <U,H> w.r.t g=g(theta_g)
     """
 
@@ -328,7 +328,7 @@ def qng_grad_gaussian(unitary, g, i, hamiltonian) -> Objective:
 
     Oplus = ExpectationValueImpl(U=U1, H=hamiltonian)
     Ominus = ExpectationValueImpl(U=U2, H=hamiltonian)
-    dOinc = w1 * Objective(argsets=[[Oplus]]) + w2 * Objective(argsets=[[Ominus]])
+    dOinc = w1 * VectorObjective(argsets=[[Oplus]]) + w2 * VectorObjective(argsets=[[Ominus]])
     return dOinc
 
 
@@ -404,7 +404,7 @@ def qng_dict(argument,matrix,subvector,mapping,positional) -> typing.Dict:
         the CallableVector of the (self-parameter) gradient of argument.
     mapping: dict:
         a dictionary mapping the self parameters of argument to the real parameters of an objective.
-    positional: Objective:
+    positional: VectorObjective:
         the positional derivative of the objective from whence argument came w.r.t to argument.
 
     Returns
@@ -425,8 +425,8 @@ def get_qng_combos(objective, func=stokes_block,
 
     Parameters
     ----------
-    objective: Objective:
-        the Objective whose qng is sought.
+    objective: VectorObjective:
+        the VectorObjective whose qng is sought.
     func: callable: (Default = stokes_block):
         the function used to obtain the (blocks of) the qgt. Default uses stokes_block, defined above.
     initial_values: dict, optional:
@@ -478,7 +478,7 @@ def get_qng_combos(objective, func=stokes_block,
                 indict={}
                 for v in p.extract_variables():
                     gi=__grad_inner(p,v)
-                    if isinstance(gi,Objective):
+                    if isinstance(gi, VectorObjective):
                         g=compile_objective(gi, variables=initial_values, samples=samples,device=device,
                                             backend=backend, noise=noise)
                     else:
@@ -488,7 +488,7 @@ def get_qng_combos(objective, func=stokes_block,
 
         posarg = jax.grad(compiled.transformations[0],i)
 
-        p = Objective(argsets=compiled.argsets, transformations=[posarg])
+        p = VectorObjective(argsets=compiled.argsets, transformations=[posarg])
 
         pos = compile_objective(p, variables=initial_values, samples=samples,device=device,
                                 backend=backend, noise=noise)

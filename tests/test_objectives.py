@@ -1,6 +1,6 @@
 import tequila.simulators.simulator_api
 from tequila.circuit import gates
-from tequila.objective import Objective, ExpectationValue
+from tequila.objective import VectorObjective, ExpectationValue
 from tequila.objective.objective import Variable
 from tequila.hamiltonian import paulis
 from tequila.circuit.gradient import grad
@@ -12,7 +12,7 @@ from tequila.simulators.simulator_api import simulate
 
 
 def test_non_quantum():
-    E = tq.Objective()
+    E = tq.VectorObjective()
     E += 1.0
     E = E + 2.0
     E *= 2.0
@@ -283,7 +283,7 @@ def test_ex_power(simulator, value1=(numpy.random.randint(0, 1000) / 1000.0 * (n
     assert np.isclose(val, an1 ** an2, atol=1.e-4)
 
 
-### these four tests test the mixed Objective,ExpectationValue operations to ensure propriety
+### these four tests test the mixed VectorObjective,ExpectationValue operations to ensure propriety
 
 @pytest.mark.parametrize("simulator", [tequila.simulators.simulator_api.pick_backend("random"), tequila.simulators.simulator_api.pick_backend()])
 def test_mixed_addition(simulator, value1=(numpy.random.randint(0, 1000) / 1000.0 * (numpy.pi / 2.0)),
@@ -392,7 +392,7 @@ def test_heterogeneous_operations_l(simulator, op, value1=(numpy.random.randint(
     H2 = paulis.X(qubit=qubit)
     U2 = gates.X(target=control) + gates.Ry(target=qubit, control=control, angle=angle2)
     e2 = ExpectationValue(U=U2, H=H2)
-    added = Objective(argsets=[[angle1, e2.args[0]]], transformations=[op])
+    added = VectorObjective(argsets=[[angle1, e2.args[0]]], transformations=[op])
     val = simulate(added, variables=variables, backend=simulator)
     en2 = simulate(e2, variables=variables, backend=simulator)
     an1 = angle1(variables=variables)
@@ -413,7 +413,7 @@ def test_heterogeneous_operations_r(simulator, op, value1=(numpy.random.randint(
     H1 = paulis.Y(qubit=qubit)
     U1 = gates.X(target=control) + gates.Rx(target=qubit, control=control, angle=angle1)
     e1 = ExpectationValue(U=U1, H=H1)
-    added = Objective(argsets=[[e1.args[0], angle2]], transformations=[op])
+    added = VectorObjective(argsets=[[e1.args[0], angle2]], transformations=[op])
     val = simulate(added, variables=variables, backend=simulator)
     en1 = simulate(e1, variables=variables, backend=simulator)
     an1 = -np.sin(angle1(variables=variables))
@@ -433,7 +433,7 @@ def test_heterogeneous_gradient_r_add(simulator):
     H1 = paulis.Y(qubit=qubit)
     U1 = gates.X(target=control) + gates.Rx(target=qubit, control=control, angle=angle1)
     e1 = ExpectationValue(U=U1, H=H1)
-    added = Objective(argsets=[[e1.args[0], angle1]], transformations=[np.add])
+    added = VectorObjective(argsets=[[e1.args[0], angle1]], transformations=[np.add])
     val = simulate(added, variables=variables, backend=simulator)
     en1 = simulate(e1, variables=variables, backend=simulator)
     an1 = -np.sin(angle1(variables=variables))
@@ -459,7 +459,7 @@ def test_heterogeneous_gradient_r_mul(simulator):
     H1 = paulis.Y(qubit=qubit)
     U1 = gates.X(target=control) + gates.Rx(target=qubit, control=control, angle=angle1)
     e1 = ExpectationValue(U=U1, H=H1)
-    added = Objective(argsets=[[e1.args[0], angle1]], transformations=[np.multiply])
+    added = VectorObjective(argsets=[[e1.args[0], angle1]], transformations=[np.multiply])
     val = simulate(added, variables=variables, backend=simulator)
     en1 = simulate(e1, variables=variables, backend=simulator)
     an1 = -np.sin(angle1(variables=variables))
@@ -485,7 +485,7 @@ def test_heterogeneous_gradient_r_div(simulator):
     H1 = paulis.Y(qubit=qubit)
     U1 = gates.X(target=control) + gates.Rx(target=qubit, control=control, angle=angle1)
     e1 = ExpectationValue(U=U1, H=H1)
-    added = Objective(argsets=[[e1.args[0], angle1]], transformations=[np.true_divide])
+    added = VectorObjective(argsets=[[e1.args[0], angle1]], transformations=[np.true_divide])
     val = simulate(added, variables=variables, backend=simulator)
     en1 = simulate(e1, variables=variables, backend=simulator)
     an1 = -np.sin(angle1(variables=variables))
@@ -603,7 +603,7 @@ def test_stacking():
         return np.cos(x)**2. + np.sin(x)**2.
     funcs=[f,f,f,f]
     vals = {Variable('a'):numpy.random.uniform(0,np.pi),Variable('b'):numpy.random.uniform(0,np.pi)}
-    O = Objective(argsets=[[a],[b],[a],[b]],transformations=funcs)
+    O = VectorObjective(argsets=[[a], [b], [a], [b]], transformations=funcs)
     O1 = O.apply_op_list(funcs)
     O2 = O1/4
     output = simulate(O2,variables=vals)

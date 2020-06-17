@@ -5,7 +5,7 @@ from typing import Dict, Union, Hashable
 import pkg_resources
 from pkg_resources import DistributionNotFound
 
-from tequila.objective import Objective, Variable, assign_variable, format_variable_dictionary
+from tequila.objective import VectorObjective, Variable, assign_variable, format_variable_dictionary
 from tequila.utils.exceptions import TequilaException, TequilaWarning
 from tequila.simulators.simulator_base import BackendCircuit, BackendExpectationValue
 from tequila.circuit.noise import NoiseModel
@@ -19,7 +19,7 @@ INSTALLED_SAMPLERS = {}
 HAS_QULACS = True
 INSTALLED_NOISE_SAMPLERS = {}
 if typing.TYPE_CHECKING:
-    from tequila.objective import Objective, Variable
+    from tequila.objective import VectorObjective, Variable
     from tequila.circuit.gates import QCircuit
     import numbers.Real as RealNumber
     from tequila.wavefunction.qubit_wavefunction import QubitWaveFunction
@@ -205,19 +205,19 @@ def pick_backend(backend: str = None, samples: int = None, noise: NoiseModel = N
 
     return backend
 
-def compile_objective(objective: 'Objective',
+def compile_objective(objective: 'VectorObjective',
                       variables: typing.Dict['Variable', 'RealNumber'] = None,
                       backend: str = None,
                       samples: int = None,
                       device: str = None,
                       noise: NoiseModel = None,
                       *args,
-                      **kwargs) -> Objective:
+                      **kwargs) -> VectorObjective:
     """
     compile an objective to render it callable and return it.
     Parameters
     ----------
-    objective: Objective:
+    objective: VectorObjective:
         the objective to compile
     variables: dict, optional:
         the variables to compile the objective with. Will autogenerate zeros for all variables if not supplied.
@@ -234,7 +234,7 @@ def compile_objective(objective: 'Objective',
 
     Returns
     -------
-    Objective:
+    VectorObjective:
         the compiled objective.
     """
 
@@ -331,7 +331,7 @@ def compile_circuit(abstract_circuit: 'QCircuit',
     return CircType(abstract_circuit=abstract_circuit, variables=variables, noise=noise, device=device)
 
 
-def simulate(objective: typing.Union['Objective', 'QCircuit'],
+def simulate(objective: typing.Union['VectorObjective', 'QCircuit'],
              variables: Dict[Union[Variable, Hashable], RealNumber] = None,
              samples: int = None,
              backend: str = None,
@@ -343,7 +343,7 @@ def simulate(objective: typing.Union['Objective', 'QCircuit'],
 
     Parameters
     ----------
-    objective: Objective:
+    objective: VectorObjective:
         tequila objective or circuit
     variables: Dict:
         The variables of the objective given as dictionary
@@ -399,7 +399,7 @@ def draw(objective, variables=None, backend: str = None):
         elif "qiskit" in INSTALLED_SIMULATORS:
             backend = "qiskit"
 
-    if isinstance(objective, Objective):
+    if isinstance(objective, VectorObjective):
         print(objective)
         drawn = {}
         for i, E in enumerate(objective.get_expectationvalues()):
@@ -428,19 +428,19 @@ def draw(objective, variables=None, backend: str = None):
             print(compiled.circuit)
 
 
-def compile(objective: typing.Union['Objective', 'QCircuit'],
+def compile(objective: typing.Union['VectorObjective', 'QCircuit'],
             variables: Dict[Union['Variable', Hashable], RealNumber] = None,
             samples: int = None,
             backend: str = None,
             noise: NoiseModel = None,
             device: str = None,
             *args,
-            **kwargs) -> typing.Union['BackendCircuit', 'Objective']:
+            **kwargs) -> typing.Union['BackendCircuit', 'VectorObjective']:
     """Compile a tequila objective or circuit to a backend
 
     Parameters
     ----------
-    objective: Objective:
+    objective: VectorObjective:
         tequila objective or circuit
     variables: dict, optional:
         The variables of the objective given as dictionary
@@ -455,7 +455,7 @@ def compile(objective: typing.Union['Objective', 'QCircuit'],
         a device on which (or in emulation of which) to sample the circuit.
     Returns
     -------
-    simulators.BackendCircuit or Objective
+    simulators.BackendCircuit or VectorObjective
         the compiled object.
 
     """
@@ -468,7 +468,7 @@ def compile(objective: typing.Union['Objective', 'QCircuit'],
         # allow hashable types as keys without casting it to variables
         variables = {assign_variable(k): v for k, v in variables.items()}
 
-    if isinstance(objective, Objective) or hasattr(objective, "args"):
+    if isinstance(objective, VectorObjective) or hasattr(objective, "args"):
         return compile_objective(objective=objective, samples=samples, variables=variables, backend=backend, noise=noise, device=device)
     elif hasattr(objective, "gates") or hasattr(objective, "abstract_circuit"):
         return compile_circuit(abstract_circuit=objective, variables=variables, backend=backend,samples=samples,
@@ -479,8 +479,8 @@ def compile(objective: typing.Union['Objective', 'QCircuit'],
                                                                                   object=objective))
 
 
-def compile_to_function(objective: typing.Union['Objective', 'QCircuit'], *args,
-                        **kwargs) -> typing.Union['BackendCircuit', 'Objective']:
+def compile_to_function(objective: typing.Union['VectorObjective', 'QCircuit'], *args,
+                        **kwargs) -> typing.Union['BackendCircuit', 'VectorObjective']:
     """
     Notes
     ----------
@@ -493,7 +493,7 @@ def compile_to_function(objective: typing.Union['Objective', 'QCircuit'], *args,
 
     Returns
     -------
-    BackendCircuit or Objective:
+    BackendCircuit or VectorObjective:
         wrapper over a compiled objective/circuit
         can be called like: function(0.0,1.0,...,samples=None)
     """

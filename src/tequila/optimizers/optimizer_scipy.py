@@ -1,5 +1,5 @@
 import scipy, numpy, typing, numbers
-from tequila.objective import Objective
+from tequila.objective import VectorObjective
 from tequila.objective.objective import assign_variable, Variable, format_variable_dictionary, format_variable_list
 from .optimizer_base import Optimizer
 from ._containers import _EvalContainer, _GradContainer, _HessContainer, _QngContainer
@@ -95,11 +95,11 @@ class OptimizerSciPy(Optimizer):
         else:
             self.method_constraints = method_constraints
 
-    def __call__(self, objective: Objective,
+    def __call__(self, objective: VectorObjective,
                  variables: typing.List[Variable] = None,
                  initial_values: typing.Dict[Variable, numbers.Real] = None,
-                 gradient: typing.Dict[Variable, Objective] = None,
-                 hessian: typing.Dict[typing.Tuple[Variable, Variable], Objective] = None,
+                 gradient: typing.Dict[Variable, VectorObjective] = None,
+                 hessian: typing.Dict[typing.Tuple[Variable, Variable], VectorObjective] = None,
                  reset_history: bool = True,
                  *args,
                  **kwargs) -> SciPyReturnType:
@@ -109,7 +109,7 @@ class OptimizerSciPy(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective to optimize.
         variables: list, optional:
             the variables of objective to optimize. If None: optimize all.
@@ -132,7 +132,7 @@ class OptimizerSciPy(Optimizer):
 
         objective = objective.contract()
         infostring = "{:15} : {}\n".format("Method", self.method)
-        infostring += "{:15} : {} expectationvalues\n".format("Objective", objective.count_expectationvalues())
+        infostring += "{:15} : {} expectationvalues\n".format("VectorObjective", objective.count_expectationvalues())
 
         if gradient is not None:
             infostring += "{:15} : {}\n".format("grad instr", gradient)
@@ -323,9 +323,9 @@ def available_methods(energy=True, gradient=True, hessian=True) -> typing.List[s
     return methods
 
 
-def minimize(objective: Objective,
-             gradient: typing.Union[str, typing.Dict[Variable, Objective]] = None,
-             hessian: typing.Union[str, typing.Dict[typing.Tuple[Variable, Variable], Objective]] = None,
+def minimize(objective: VectorObjective,
+             gradient: typing.Union[str, typing.Dict[Variable, VectorObjective]] = None,
+             hessian: typing.Union[str, typing.Dict[typing.Tuple[Variable, Variable], VectorObjective]] = None,
              initial_values: typing.Dict[typing.Hashable, numbers.Real] = None,
              variables: typing.List[typing.Hashable] = None,
              samples: int = None,
@@ -346,14 +346,14 @@ def minimize(objective: Objective,
 
     Parameters
     ----------
-    objective: Objective :
+    objective: VectorObjective :
         The tequila objective to optimize
-    gradient: typing.Union[str, typing.Dict[Variable, Objective], None] : Default value = None):
+    gradient: typing.Union[str, typing.Dict[Variable, VectorObjective], None] : Default value = None):
         '2-point', 'cs' or '3-point' for numerical gradient evaluation (does not work in combination with all optimizers),
         dictionary of variables and tequila objective to define own gradient,
         None for automatic construction (default)
         Other options include 'qng' to use the quantum natural gradient.
-    hessian: typing.Union[str, typing.Dict[Variable, Objective], None], optional:
+    hessian: typing.Union[str, typing.Dict[Variable, VectorObjective], None], optional:
         '2-point', 'cs' or '3-point' for numerical gradient evaluation (does not work in combination with all optimizers),
         dictionary (keys:tuple of variables, values:tequila objective) to define own gradient,
         None for automatic construction (default)
@@ -395,10 +395,10 @@ def minimize(objective: Objective,
     """
 
     if isinstance(gradient, dict) or hasattr(gradient, "items"):
-        if all([isinstance(x, Objective) for x in gradient.values()]):
+        if all([isinstance(x, VectorObjective) for x in gradient.values()]):
             gradient = format_variable_dictionary(gradient)
     if isinstance(hessian, dict) or hasattr(hessian, "items"):
-        if all([isinstance(x, Objective) for x in hessian.values()]):
+        if all([isinstance(x, VectorObjective) for x in hessian.values()]):
             hessian = {(assign_variable(k[0]), assign_variable([k[1]])): v for k, v in hessian.items()}
     method_bounds = format_variable_dictionary(method_bounds)
 

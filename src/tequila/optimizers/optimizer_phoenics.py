@@ -1,4 +1,4 @@
-from tequila.objective.objective import Objective
+from tequila.objective.objective import VectorObjective
 from tequila.optimizers.optimizer_base import Optimizer
 import typing
 import numbers
@@ -100,7 +100,7 @@ class OptimizerPhoenics(Optimizer):
 
         Parameters
         ----------
-        objective: Objective:
+        objective: VectorObjective:
             the objective to optimize over.
         passive_angles: dict, optional:
             a dictionary of angles not to optimize over.
@@ -146,7 +146,7 @@ class OptimizerPhoenics(Optimizer):
         bird = phoenics.Phoenics(config_dict=config)
         return bird
 
-    def __call__(self, objective: Objective,
+    def __call__(self, objective: VectorObjective,
                  maxiter=None,
                  variables: typing.List[Variable] = None,
                  initial_values: typing.Dict[Variable, numbers.Real] = None,
@@ -160,7 +160,7 @@ class OptimizerPhoenics(Optimizer):
 
         Parameters
         ----------
-        objective: Objective
+        objective: VectorObjective
             the objective to optimize.
         maxiter: int:
             (Default value = None)
@@ -258,7 +258,7 @@ class OptimizerPhoenics(Optimizer):
                         print("energy = {:+2.8f}".format(En))
             stop = time.time()
             if not self.silent:
-                print("Quantum Objective evaluations: {}s Wall-Time".format(stop-start))
+                print("Quantum VectorObjective evaluations: {}s Wall-Time".format(stop-start))
 
             for run in runs:
                 angles = run[0]
@@ -290,7 +290,7 @@ class OptimizerPhoenics(Optimizer):
         return PhoenicsReturnType(energy=best, angles=best_angles, history=self.history, observations=obs,object=bird)
 
 
-def minimize(objective: Objective,
+def minimize(objective: VectorObjective,
              maxiter: int = None,
              samples: int = None,
              variables: typing.List = None,
@@ -308,7 +308,7 @@ def minimize(objective: Objective,
 
     Parameters
     ----------
-    objective: Objective:
+    objective: VectorObjective:
         The tequila objective to optimize
     initial_values: typing.Dict[typing.Hashable, numbers.Real], optional:
         Initial values as dictionary of Hashable types (variable keys) and floating point numbers.
@@ -323,7 +323,7 @@ def minimize(objective: Objective,
     backend: str, optional:
          Simulator backend, will be automatically chosen if set to None
     noise: NoiseModel, optional:
-         a noise model to apply to the circuits of Objective.
+         a noise model to apply to the circuits of VectorObjective.
     device: optional:
         the device from which to (potentially, simulatedly) sample all quantum circuits employed in optimization.
     previous: optional:
