@@ -266,9 +266,6 @@ class Compiler:
                 cg = compile_exponential_pauli_gate(gate=cg)
             if self.swap:
                 cg = compile_swap(gate=cg)
-            # now every other multitarget gate which might be defined
-            if self.multitarget:
-                cg = compile_multitarget(gate=cg)
             if self.multicontrol:
                 raise NotImplementedError("Multicontrol compilation does not work yet")
 
@@ -1248,12 +1245,14 @@ def compile_generalized_rotation_gate(gate, compile_exponential_pauli: bool = Fa
     -------
 
     """
-    if not hasattr(gate, "generator"):
+    if gate.generator is None or gate.name.lower() in ['phase', 'rx', 'ry', 'rz']:
         return QCircuit.wrap_gate(gate)
     if not hasattr(gate, "eigenvalues_magnitude"):
         return QCircuit.wrap_gate(gate)
 
-    return do_compile_trotterized_gate(generator=gate.generator, steps=gate.steps, randomize=False,
+    steps = 1 if not hasattr(gate, "steps") else gate.steps
+
+    return do_compile_trotterized_gate(generator=gate.generator, steps=steps, randomize=False,
                                        factor=gate.parameter, control=gate.control)
 
 
