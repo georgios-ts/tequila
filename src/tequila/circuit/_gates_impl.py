@@ -6,6 +6,7 @@ from tequila import TequilaException
 from tequila.objective.objective import Variable, FixedVariable, assign_variable,Objective,VectorObjective
 from tequila.hamiltonian import PauliString, QubitHamiltonian, paulis
 from tequila.tools import list_assignment
+from numpy import pi
 
 from dataclasses import dataclass
 
@@ -30,11 +31,16 @@ class QGateImpl:
 
     @property
     def qubits(self):
-        return self._qubits
+        # Set the active qubits
+        if self.control:
+            qubits = self.target + self.control
+        else:
+            qubits = self.target
+        return sorted(tuple(set(qubits)))
 
     @property
     def max_qubit(self):
-        return self._max_qubit
+        return self.compute_max_qubit()
 
     def extract_variables(self):
         return []
@@ -53,13 +59,6 @@ class QGateImpl:
         self._target = tuple(list_assignment(target))
         self._control = tuple(list_assignment(control))
         self.finalize()
-        # Set the active qubits
-        if self.control:
-            self._qubits = self.target + self.control
-        else:
-            self._qubits = self.target
-        self._qubits = sorted(tuple(set(self._qubits)))
-        self._max_qubit = self.compute_max_qubit()
         self.generator = generator
 
     def copy(self):
@@ -96,6 +95,16 @@ class QGateImpl:
             for c in self.target:
                 if c in self.control:
                     raise Exception("control and target are the same qubit: " + self.__str__())
+        if hasattr(self,"generator") and self.generator:
+            if set(list(self.generator.qubits)) != set(list(self.target)):
+                raise Exception("qubits of generator and targets don't agree -- mapping error?\n gate = {}".format(self.__str__()))
+        if hasattr(self, "generators"):
+            genq = []
+            for generator in self.generators:
+                genq += generator.qubits
+            if set(list(genq)) != set(list(self.target)):
+                raise Exception("qubits of generator and targets don't agree -- mapping error?\n gate = {}".format(self.__str__()))
+
 
     def __str__(self):
         result = str(self.name) + "(target=" + str(self.target)
@@ -131,14 +140,12 @@ class QGateImpl:
     def map_qubits(self, qubit_map: dict):
         mapped = copy.deepcopy(self)
         mapped._target = tuple([qubit_map[i] for i in self.target])
-        qubits = mapped._target
         if self.control is not None:
             mapped._control = tuple([qubit_map[i] for i in self.control])
-            qubits += mapped._control
-        mapped._qubits = sorted(tuple(set(qubits)))
-        mapped._max_qubit = mapped.compute_max_qubit()
-        if self.generator:
-            mapped.generator = self.generator.map_qubits(qubit_map)
+        if hasattr(self, "generator") and self.generator:
+            mapped.generator = self.generator.map_qubits(qubit_map=qubit_map)
+        if hasattr(self, "generators"):
+            mapped.generators = [i.map_qubits(qubit_map=qubit_map) for i in self.generators]
         mapped.finalize()
         return mapped
 
@@ -275,13 +282,34 @@ class PhaseGateImpl(DifferentiableGateImpl):
 
 
 class PowerGateImpl(ParametrizedGateImpl):
+    """
+    Attributes
+    ---------
+    power
+        numeric type (fixed exponent) or hashable type (parametrized exponent)
+    parameter
+        power multiplied by pi
+        to be consitent with exp(-i a/2 G) representation [a: gate.parameter, G: gate.generator]
+    """
 
-    def __init__(self, name, target: list, power=None, control: list = None, generator: QubitHamiltonian = None):
-        super().__init__(name=name, parameter=power, target=target, control=control, generator=generator)
+    @property
+    def power(self):
+        return self._power
+
+    @power.setter
+    def power(self, other):
+        self._power = assign_variable(variable=other)
+
+    def __init__(self, name, target: list, power, control: list = None, generator: QubitHamiltonian = None):
+        super().__init__(name=name, parameter=power * pi, target=target, control=control, generator=generator)
+        self._power = assign_variable(variable=power)
 
     def dagger(self):
         result = copy.deepcopy(self)
+        result._parameter = assign_variable(-self.parameter)
+        result._power = assign_variable(-self.power)
         return result
+
 
 class GeneralizedRotationImpl(DifferentiableGateImpl):
     """
@@ -428,8 +456,3 @@ class TrotterizedGateImpl(QGateImpl):
             angles.append(-angle)
         result.angles = angles
         return result
-
-    def map_qubits(self, qubit_map: dict):
-        mapped = super().map_qubits(qubit_map=qubit_map)
-        mapped.generators = [generator.map_qubits(qubit_map=qubit_map) for generator in mapped.generators]
-        return mapped
